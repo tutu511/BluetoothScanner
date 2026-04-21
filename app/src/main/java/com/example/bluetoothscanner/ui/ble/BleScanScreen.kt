@@ -1,4 +1,4 @@
-package com.example.bluetoothscanner.ui.classic
+package com.example.bluetoothscanner.ui.ble
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,19 +18,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
-
 /**
- * 宣告 ClassicScanScreen 掃描頁面
- * API：BluetoothAdapter.startDiscovery()
- * 用途：耳機、喇叭、鍵盤、滑鼠、手機對傳檔案
- * 傳輸速度：快，適合大量資料（音訊串流）
- * 耗電量：較高
- * 掃描時間：約 12 秒，系統控制，無法自訂
- * 掃描結果：透過廣播 ACTION_FOUND 接收
- * 連線方式：需要配對
+ * 宣告 BleScanScreen BLE 掃描頁面
+ * API：BluetoothLeScanner.startScan()
+ * 用途：智慧手錶、心率帶、IoT 感測器、Beacon、血糖機
+ * 傳輸速度：較慢，適合小量資料
+ * 耗電量：極低（核心）
+ * 掃描時間：可自訂，持續掃描或設定 filter
+ * 掃描結果：透過 ScanCallback 回調
+ * 連線方式：不一定需要配對，可直接連線
  */
 @Composable
-fun ClassicScanScreen(navController: NavController) {
+fun BleScanScreen(navController: NavController) {
 
     Surface(
         modifier = Modifier.fillMaxSize()
@@ -44,7 +43,7 @@ fun ClassicScanScreen(navController: NavController) {
 
             // 標題
             Text(
-                text = "Classic 掃描",
+                text = "BLE 掃描",
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
@@ -52,10 +51,9 @@ fun ClassicScanScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 使用 Row 放置返回、開始掃描、停止掃描三個按鈕
+            // 按鈕：返回、開始掃描、停止掃描
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                // 設定按鈕之間平均分散排列
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
 
@@ -108,6 +106,7 @@ fun ClassicScanScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // 掃描結果提示文字
             Text(
                 text = "目前尚無掃描結果",
                 style = MaterialTheme.typography.bodyMedium
