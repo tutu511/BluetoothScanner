@@ -152,7 +152,9 @@ fun BleScanScreen(navController: NavController) {
                     DeviceItem(
                         device = device,
                         onClick = {
-                            navController.navigate(Routes.DEVICE_DETAIL)
+                            navController.navigate(
+                                Routes.deviceDetailRoute(device.address)
+                            )
                         }
                     )
                 }

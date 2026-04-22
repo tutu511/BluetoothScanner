@@ -14,4 +14,12 @@ object Routes {
 
     // 裝置詳情頁
     const val DEVICE_DETAIL = "device_detail"
+
+    // 定義裝置詳細頁完整路由格式，包含所有要傳遞的參數
+    const val DEVICE_DETAIL_ROUTE = "device_detail/{address}"
+
+    // 建立裝置詳細頁實際導航路徑的方法，方便外層直接呼叫
+    fun deviceDetailRoute(address: String): String {
+        return "$DEVICE_DETAIL/$address"
+    }
 }

@@ -18,7 +18,7 @@ import androidx.navigation.NavController
 
 // 宣告 DeviceDetailScreen 裝置詳細資訊頁面
 @Composable
-fun DeviceDetailScreen(navController: NavController) {
+fun DeviceDetailScreen(navController: NavController, address: String) {
 
     Surface(
         modifier = Modifier.fillMaxSize()
@@ -70,7 +70,7 @@ fun DeviceDetailScreen(navController: NavController) {
              * 類似網路卡的 MAC，每台裝置出廠時就燒錄在晶片裡
              */
             Text(
-                text = "MAC Address：--:--:--:--:--:--",
+                text = "裝置 MAC Address：$address",
                 style = MaterialTheme.typography.bodyLarge
             )
 
