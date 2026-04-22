@@ -8,15 +8,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.bluetoothscanner.data.model.ScanDevice
+import com.example.bluetoothscanner.ui.components.DeviceItem
+import com.example.bluetoothscanner.ui.navigation.Routes
 
 
 /**
@@ -31,6 +37,34 @@ import androidx.navigation.NavController
  */
 @Composable
 fun ClassicScanScreen(navController: NavController) {
+
+    // 建立假資料清單：先模擬掃描結果
+    val deviceList = remember {
+        listOf(
+            ScanDevice(
+                name = "Sony WH-1000XM5",
+                address = "00:11:22:33:44:55",
+                rssi = -45,
+                type = "Classic",
+                bonded = true
+            ),
+            ScanDevice(
+                name = "JBL Speaker",
+                address = "AA:BB:CC:DD:EE:FF",
+                rssi = -60,
+                type = "Classic",
+                bonded = false
+            ),
+            ScanDevice(
+                name = null,
+                address = "12:34:56:78:90:AB",
+                rssi = -72,
+                type = "Classic",
+                bonded = false
+            )
+        )
+    }
+
 
     Surface(
         modifier = Modifier.fillMaxSize()
@@ -94,7 +128,7 @@ fun ClassicScanScreen(navController: NavController) {
 
             // 目前掃描狀態
             Text(
-                text = "目前狀態：尚未開始掃描",
+                text = "目前狀態：顯示假資料中",
                 style = MaterialTheme.typography.bodyLarge
             )
 
@@ -108,10 +142,23 @@ fun ClassicScanScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text(
-                text = "目前尚無掃描結果",
-                style = MaterialTheme.typography.bodyMedium
-            )
+            // 使用 LazyColumn 顯示多筆裝置清單
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                // 每一筆 item 之間的間距
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // 裝置資料
+                items(deviceList) { device ->
+                    // 單筆裝置資訊
+                    DeviceItem(
+                        device = device,
+                        onClick = {
+                            navController.navigate(Routes.DEVICE_DETAIL)
+                        }
+                    )
+                }
+            }
         }
     }
 }

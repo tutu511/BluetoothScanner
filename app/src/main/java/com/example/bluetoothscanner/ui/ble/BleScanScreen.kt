@@ -8,15 +8,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.bluetoothscanner.data.model.ScanDevice
+import com.example.bluetoothscanner.ui.components.DeviceItem
+import com.example.bluetoothscanner.ui.navigation.Routes
 
 /**
  * 宣告 BleScanScreen BLE 掃描頁面
@@ -30,6 +36,33 @@ import androidx.navigation.NavController
  */
 @Composable
 fun BleScanScreen(navController: NavController) {
+
+    // 建立假資料清單：模擬 BLE 掃描結果
+    val deviceList = remember {
+        listOf(
+            ScanDevice(
+                name = "Mi Band 8",
+                address = "10:20:30:40:50:60",
+                rssi = -38,
+                type = "BLE",
+                bonded = true
+            ),
+            ScanDevice(
+                name = "Temp Sensor",
+                address = "AA:10:BB:20:CC:30",
+                rssi = -67,
+                type = "BLE",
+                bonded = false
+            ),
+            ScanDevice(
+                name = null,
+                address = "DE:AD:BE:EF:11:22",
+                rssi = -80,
+                type = "BLE",
+                bonded = false
+            )
+        )
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize()
@@ -92,7 +125,7 @@ fun BleScanScreen(navController: NavController) {
 
             // 目前掃描狀態
             Text(
-                text = "目前狀態：尚未開始掃描",
+                text = "目前狀態：顯示假資料中",
                 style = MaterialTheme.typography.bodyLarge
             )
 
@@ -106,11 +139,24 @@ fun BleScanScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 掃描結果提示文字
-            Text(
-                text = "目前尚無掃描結果",
-                style = MaterialTheme.typography.bodyMedium
-            )
+            // 多筆裝置清單
+            LazyColumn(
+                // 讓清單填滿整個寬度。
+                modifier = Modifier.fillMaxWidth(),
+                // 設定每一筆 item 之間的間距。
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // 逐筆顯示裝置資料
+                items(deviceList) { device ->
+                    // 單筆裝置資訊。
+                    DeviceItem(
+                        device = device,
+                        onClick = {
+                            navController.navigate(Routes.DEVICE_DETAIL)
+                        }
+                    )
+                }
+            }
         }
     }
 }
