@@ -11,14 +11,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.bluetoothscanner.data.model.ScanDevice
 import com.example.bluetoothscanner.ui.components.DeviceItem
@@ -36,35 +41,13 @@ import com.example.bluetoothscanner.ui.navigation.Routes
  * 連線方式：需要配對
  */
 @Composable
-fun ClassicScanScreen(navController: NavController) {
-
-    // 建立假資料清單：先模擬掃描結果
-    val deviceList = remember {
-        listOf(
-            ScanDevice(
-                name = "Sony WH-1000XM5",
-                address = "00:11:22:33:44:55",
-                rssi = -45,
-                type = "Classic",
-                bonded = true
-            ),
-            ScanDevice(
-                name = "JBL Speaker",
-                address = "AA:BB:CC:DD:EE:FF",
-                rssi = -60,
-                type = "Classic",
-                bonded = false
-            ),
-            ScanDevice(
-                name = null,
-                address = "12:34:56:78:90:AB",
-                rssi = -72,
-                type = "Classic",
-                bonded = false
-            )
-        )
-    }
-
+fun ClassicScanScreen(
+    navController: NavController,
+    // 由 Hilt 自動提供 ClassicScanViewModel。
+    viewModel: ClassicScanViewModel = hiltViewModel()
+) {
+    // 觀察 ViewModel 的 uiState，讓畫面隨狀態變化自動更新。
+    val uiState by viewModel.uiState.collectAsState()
 
     Surface(
         modifier = Modifier.fillMaxSize()
@@ -75,7 +58,6 @@ fun ClassicScanScreen(navController: NavController) {
                 .fillMaxSize()
                 .padding(24.dp)
         ) {
-
             // 標題
             Text(
                 text = "Classic 掃描",
@@ -108,6 +90,7 @@ fun ClassicScanScreen(navController: NavController) {
                 // 開始掃描按鈕
                 Button(
                     onClick = {
+                        viewModel.startScan()
                     },
                     modifier = Modifier.weight(1f)
                 ) {
@@ -117,6 +100,7 @@ fun ClassicScanScreen(navController: NavController) {
                 // 停止掃描按鈕
                 Button(
                     onClick = {
+                        viewModel.stopScan()
                     },
                     modifier = Modifier.weight(1f)
                 ) {
@@ -126,11 +110,32 @@ fun ClassicScanScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 目前掃描狀態
+            // 顯示目前狀態文字
             Text(
-                text = "目前狀態：顯示假資料中",
+                text = uiState.statusMessage,
                 style = MaterialTheme.typography.bodyLarge
             )
+
+            // 如果目前正在載入中，顯示 loading 元件
+            if (uiState.isLoading) {
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 圓形載入指示器
+                CircularProgressIndicator()
+            }
+
+            // 如果有錯誤訊息，顯示錯誤內容
+            uiState.errorMessage?.let { errorMessage ->
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 顯示錯誤訊息
+                Text(
+                    text = "錯誤：$errorMessage",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -142,23 +147,32 @@ fun ClassicScanScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 使用 LazyColumn 顯示多筆裝置清單
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                // 每一筆 item 之間的間距
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // 裝置資料
-                items(deviceList) { device ->
-                    // 單筆裝置資訊
-                    DeviceItem(
-                        device = device,
-                        onClick = {
-                            navController.navigate(
-                                Routes.deviceDetailRoute(device.address)
-                            )
-                        }
-                    )
+            // 如果沒有任何裝置資料，顯示空狀態文字。
+            if (uiState.deviceList.isEmpty()) {
+                // 顯示空清單提示
+                Text(
+                    text = "目前尚無掃描結果",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            } else {
+                // 使用 LazyColumn 顯示多筆裝置清單
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    // 每一筆 item 之間的間距
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // 裝置資料
+                    items(uiState.deviceList) { device ->
+                        // 單筆裝置資訊
+                        DeviceItem(
+                            device = device,
+                            onClick = {
+                                navController.navigate(
+                                    Routes.deviceDetailRoute(device.address)
+                                )
+                            }
+                        )
+                    }
                 }
             }
         }

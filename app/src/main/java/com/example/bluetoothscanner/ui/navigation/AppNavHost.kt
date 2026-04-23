@@ -75,8 +75,7 @@ fun AppNavHost() {
 
             // 裝置詳細頁，並把 address 傳進去
             DeviceDetailScreen(
-                navController = navController,
-                address = address
+                navController = navController
             )
         }
     }
