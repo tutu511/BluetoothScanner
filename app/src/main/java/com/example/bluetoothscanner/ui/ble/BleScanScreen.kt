@@ -11,14 +11,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.bluetoothscanner.data.model.ScanDevice
 import com.example.bluetoothscanner.ui.components.DeviceItem
@@ -35,34 +40,9 @@ import com.example.bluetoothscanner.ui.navigation.Routes
  * 連線方式：不一定需要配對，可直接連線
  */
 @Composable
-fun BleScanScreen(navController: NavController) {
+fun BleScanScreen(navController: NavController, viewModel: BleScanViewModel = hiltViewModel()) {
 
-    // 建立假資料清單：模擬 BLE 掃描結果
-    val deviceList = remember {
-        listOf(
-            ScanDevice(
-                name = "Mi Band 8",
-                address = "10:20:30:40:50:60",
-                rssi = -38,
-                type = "BLE",
-                bonded = true
-            ),
-            ScanDevice(
-                name = "Temp Sensor",
-                address = "AA:10:BB:20:CC:30",
-                rssi = -67,
-                type = "BLE",
-                bonded = false
-            ),
-            ScanDevice(
-                name = null,
-                address = "DE:AD:BE:EF:11:22",
-                rssi = -80,
-                type = "BLE",
-                bonded = false
-            )
-        )
-    }
+    val uiState by viewModel.uiState.collectAsState()
 
     Surface(
         modifier = Modifier.fillMaxSize()
@@ -105,6 +85,7 @@ fun BleScanScreen(navController: NavController) {
                 // 開始掃描按鈕
                 Button(
                     onClick = {
+                        viewModel.startScan()
                     },
                     modifier = Modifier.weight(1f)
                 ) {
@@ -114,6 +95,7 @@ fun BleScanScreen(navController: NavController) {
                 // 停止掃描按鈕
                 Button(
                     onClick = {
+                        viewModel.stopScan()
                     },
                     modifier = Modifier.weight(1f)
                 ) {
@@ -125,9 +107,28 @@ fun BleScanScreen(navController: NavController) {
 
             // 目前掃描狀態
             Text(
-                text = "目前狀態：顯示假資料中",
+                text = uiState.statusMessage,
                 style = MaterialTheme.typography.bodyLarge
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 正在載入中
+            if (uiState.isLoading) {
+                CircularProgressIndicator()
+            }
+
+            // 顯示錯誤內容
+            uiState.errorMessage?.let { errorMessage ->
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 顯示錯誤訊息
+                Text(
+                    text = "錯誤：$errorMessage",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -140,23 +141,34 @@ fun BleScanScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(12.dp))
 
             // 多筆裝置清單
-            LazyColumn(
-                // 讓清單填滿整個寬度。
-                modifier = Modifier.fillMaxWidth(),
-                // 設定每一筆 item 之間的間距。
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // 逐筆顯示裝置資料
-                items(deviceList) { device ->
-                    // 單筆裝置資訊。
-                    DeviceItem(
-                        device = device,
-                        onClick = {
-                            navController.navigate(
-                                Routes.deviceDetailRoute(device.address)
-                            )
-                        }
-                    )
+            if (uiState.deviceList.isEmpty()) {
+
+                // 空清單提示
+                Text(
+                    text = "目前尚無掃描結果",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            } else {
+
+                // 使用 LazyColumn 顯示 BLE 裝置清單
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+
+                    // 裝置資料
+                    items(uiState.deviceList) { device ->
+
+                        DeviceItem(
+                            device = device,
+                            // 點擊：傳 address 到詳細頁
+                            onClick = {
+                                navController.navigate(
+                                    Routes.deviceDetailRoute(device.address)
+                                )
+                            }
+                        )
+                    }
                 }
             }
         }
