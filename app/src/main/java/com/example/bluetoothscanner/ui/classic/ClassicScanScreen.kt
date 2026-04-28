@@ -209,9 +209,13 @@ fun ClassicScanScreen(
                         DeviceItem(
                             device = device,
                             onClick = {
-                                navController.navigate(
-                                    Routes.deviceDetailRoute(device.address)
-                                )
+                                // 把使用者點擊的 device 存到目前頁面的 SavedStateHandle。
+                                navController.currentBackStackEntry
+                                    ?.savedStateHandle
+                                    ?.set(Routes.SELECTED_DEVICE, device)
+
+                                // 跳轉到 Detail 頁
+                                navController.navigate(Routes.DEVICE_DETAIL)
                             }
                         )
                     }

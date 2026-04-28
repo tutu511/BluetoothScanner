@@ -9,6 +9,8 @@ plugins {
     alias(libs.plugins.hilt.android)
     // 啟用 kapt，讓 Hilt compiler 可以產生程式碼
     alias(libs.plugins.kotlin.kapt)
+    // 套用 Kotlin Parcelize plugin
+    alias(libs.plugins.kotlin.parcelize)
 }
 
 android {

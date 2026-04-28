@@ -1,6 +1,10 @@
 package com.example.bluetoothscanner.data.model
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
 // 宣告 ScanDevice 資料類別，用來表示一個藍牙裝置的資訊
+@Parcelize
 data class ScanDevice(
 
     // 裝置名稱
@@ -18,4 +22,4 @@ data class ScanDevice(
     // 是否已經配對（bonded）
     val bonded: Boolean
 
-)
+): Parcelable

@@ -174,7 +174,7 @@ class ClassicBluetoothScannerImpl @Inject constructor(
                         }
 
                         // 如果有取得裝置資料，就轉成 ScanDevice
-                        if (device != null) {
+                        if (device != null && device.name != null) {
                             // 建立 App 內部使用的 ScanDevice 資料
                             val scanDevice = ScanDevice(
                                 name = device.name,

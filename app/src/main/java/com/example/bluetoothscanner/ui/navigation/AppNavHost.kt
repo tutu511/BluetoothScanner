@@ -56,24 +56,9 @@ fun AppNavHost() {
             BleScanScreen(navController)
         }
 
-        // 定義裝置詳細頁路由，並需要一個 address 參數
-        composable(
-            // 設定這個頁面的完整路由格式
-            route = Routes.DEVICE_DETAIL_ROUTE,
-            // 定義需要接收的導航參數清單
-            arguments = listOf(
-                // address 參數
-                navArgument("address") {
-                    // address 的型別為字串
-                    type = NavType.StringType
-                }
-            )
-        ) { backStackEntry ->
-
-            // 從導航參數中取出 address，如果取不到就給空字串
-            val address = backStackEntry.arguments?.getString("address").orEmpty()
-
-            // 裝置詳細頁，並把 address 傳進去
+        // 定義裝置詳細頁
+        composable(Routes.DEVICE_DETAIL) {
+            // 裝置詳細頁
             DeviceDetailScreen(
                 navController = navController
             )
