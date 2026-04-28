@@ -2,14 +2,15 @@ package com.example.bluetoothscanner.ui.classic
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.bluetoothscanner.data.model.ScanDevice
+import com.example.bluetoothscanner.data.repository.BluetoothScanRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlinx.coroutines.delay
 
 // 標記類別是由 Hilt 管理的 ViewModel
 @HiltViewModel
@@ -24,7 +25,9 @@ import kotlinx.coroutines.delay
  *      沒有指定的欄位 → 保留原本的值
  *      回傳一個全新的物件
  */
-class ClassicScanViewModel @Inject constructor(): ViewModel() {
+class ClassicScanViewModel @Inject constructor(
+    private val repository: BluetoothScanRepository
+) : ViewModel() {
 
     // 建立內部可變的 uiState，初始值使用 ClassicScanUiState 預設值
     private val _uiState = MutableStateFlow(ClassicScanUiState())
@@ -34,6 +37,35 @@ class ClassicScanViewModel @Inject constructor(): ViewModel() {
 
     // 開始掃描
     fun startScan() {
+        // 如果目前已經正在掃描，就不重複啟動
+        if (_uiState.value.isScanning) {
+            return
+        }
+
+        /**
+         * 协程：ViewModel 内建的一个CoroutineScope（协程的执行范围）
+         * ViewModel 建立时，viewModelScope自动建立
+         * ViewModel 销毁时，viewModelScope自动取消所有协程
+         *
+         * 预设跑在主线程（Main Thread），但你可以切换到 IO 線程【withContext(Dispatchers.IO)】
+         *
+         * 流程圖：
+         * viewModelScope.launch 啟動協程
+         *         ↓
+         * 更新 uiState → isScanning = true, isLoading = true
+         *         ↓
+         * 呼叫 repository.startClassicScan() 拿到 Flow
+         *         ↓
+         * .collect 開始等待 Flow 發出資料 ← 協程暫停在這裡
+         *         ↓                              主線程不會被 block
+         * 每來一筆 device → 更新 deviceList
+         *         ↓
+         * Flow 結束（掃描完成 or 被取消）
+         *         ↓
+         * .onCompletion 執行 → isScanning = false, 顯示結果數量
+         *         ↓
+         * 協程結束
+         */
         viewModelScope.launch {
             // 掃描狀態更新為：正在掃描
             _uiState.value = _uiState.value.copy(
@@ -43,54 +75,50 @@ class ClassicScanViewModel @Inject constructor(): ViewModel() {
                 errorMessage = null
             )
 
-            // 模擬掃描延遲。
-            delay(800)
+            /**
+             * 呼叫 Repository，開始真正掃描
+             * onCompletion：flow 結束時會執行一次
+             * collect：收集 flow 發出來的資料（trySend）
+             */
+            repository.startClassicScan()
+                .onCompletion { cause ->
+                    // cause：錯誤信息
+                    _uiState.value = _uiState.value.copy(
+                        isScanning = false,
+                        isLoading = false,
+                        statusMessage = if (cause != null) "目前狀態：掃描失敗"
+                        else "目前狀態：掃描完成，共找到 ${_uiState.value.deviceList.size} 筆裝置",
+                        errorMessage = cause?.message
+                    )
+                }
+                .catch { error ->
+                }
+                .collect { device ->
+                    val currentList = _uiState.value.deviceList
 
-            // 建立假掃描結果資料。
-            val fakeDevices = listOf(
-                ScanDevice(
-                    name = "Sony WH-1000XM5",
-                    address = "001122334455",
-                    rssi = -45,
-                    type = "Classic",
-                    bonded = true
-                ),
-                ScanDevice(
-                    name = "JBL Speaker",
-                    address = "AABBCCDDEEFF",
-                    rssi = -60,
-                    type = "Classic",
-                    bonded = false
-                ),
-                ScanDevice(
-                    name = null,
-                    address = "1234567890AB",
-                    rssi = -72,
-                    type = "Classic",
-                    bonded = false
-                )
-            )
-
-            // 將掃描結果更新到畫面狀態
-            _uiState.value = _uiState.value.copy(
-                isScanning = true,
-                isLoading = false,
-                statusMessage = "目前狀態：掃描完成，共找到 ${fakeDevices.size} 筆裝置",
-                deviceList = fakeDevices,
-                errorMessage = null
-            )
+                    // 每掃描到一個裝置就更新 UI：需判斷是否有重複的
+                    val updatedList = if (currentList.any { it.address == device.address }) {
+                        currentList.map {
+                            if (it.address == device.address) device else it
+                        }
+                    } else {
+                        currentList + device
+                    }
+                    // 將掃描結果更新到畫面狀態
+                    _uiState.value = _uiState.value.copy(
+                        isScanning = true,
+                        isLoading = false,
+                        deviceList = updatedList,
+                        statusMessage = "目前狀態：掃描中... (${updatedList.size})"
+                    )
+                }
         }
     }
 
     // 停止掃描
     fun stopScan() {
-
-        // 掃描狀態：停止掃描
-        _uiState.value = _uiState.value.copy(
-            isScanning = false,
-            isLoading = false,
-            statusMessage = "目前狀態：已停止掃描"
-        )
+        // 結束掃描 - cancelDiscovery - ACTION_DISCOVERY_FINISHED - close - onCompletion
+        repository.stopClassicScan()
     }
 
     // 清除錯誤訊息

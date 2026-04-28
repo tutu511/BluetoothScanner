@@ -1,5 +1,9 @@
 package com.example.bluetoothscanner.ui.classic
 
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -7,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -18,16 +21,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.bluetoothscanner.data.model.ScanDevice
 import com.example.bluetoothscanner.ui.components.DeviceItem
 import com.example.bluetoothscanner.ui.navigation.Routes
+import com.example.bluetoothscanner.utils.PermissionUtils
 
 
 /**
@@ -43,11 +46,36 @@ import com.example.bluetoothscanner.ui.navigation.Routes
 @Composable
 fun ClassicScanScreen(
     navController: NavController,
-    // 由 Hilt 自動提供 ClassicScanViewModel。
+    // 由 Hilt 自動提供 ClassicScanViewModel
     viewModel: ClassicScanViewModel = hiltViewModel()
 ) {
-    // 觀察 ViewModel 的 uiState，讓畫面隨狀態變化自動更新。
+    // 觀察 ViewModel 的 uiState，讓畫面隨狀態變化自動更新
     val uiState by viewModel.uiState.collectAsState()
+
+    // 取得目前 Context，用來檢查權限
+    val context = LocalContext.current
+
+    // 取得 Classic 掃描需要的權限清單
+    val permissions = PermissionUtils.classicBluetoothPermissions()
+
+    // 建立多權限請求 launcher
+    val permissionLauncher = rememberLauncherForActivityResult(
+        // 使用 RequestMultiplePermissions 一次請求多個權限
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+        // 權限請求完成後會回傳每個權限的授權結果
+        onResult = { result ->
+
+            // 檢查是否所有必要權限都已授權
+            val allGranted = result.values.all { granted ->
+                granted
+            }
+
+            // 如果全部授權，開始掃描
+            if (allGranted) {
+                viewModel.startScan()
+            }
+        }
+    )
 
     Surface(
         modifier = Modifier.fillMaxSize()
@@ -90,7 +118,21 @@ fun ClassicScanScreen(
                 // 開始掃描按鈕
                 Button(
                     onClick = {
-                        viewModel.startScan()
+                        // 判斷所有必要權限是否都已授權
+                        val allGranted = permissions.all { permission ->
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                permission
+                            ) == PackageManager.PERMISSION_GRANTED
+                        }
+
+                        // 如果已經全部授權，直接開始掃描
+                        if (allGranted) {
+                            viewModel.startScan()
+                        } else {
+                            // 如果尚未授權，向使用者請求權限。
+                            permissionLauncher.launch(permissions)
+                        }
                     },
                     modifier = Modifier.weight(1f)
                 ) {

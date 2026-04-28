@@ -16,13 +16,16 @@ import android.content.Context
 import android.content.Intent
 // 用來指定 BroadcastReceiver 要接收哪些事件
 import android.content.IntentFilter
+import android.location.LocationManager
 // 用來判斷 Android 版本
 import android.os.Build
+import android.util.Log
 // 用來相容註冊 BroadcastReceiver
 import androidx.core.content.ContextCompat
 // 讓 Hilt 注入 App 層級 Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.example.bluetoothscanner.data.model.ScanDevice
+import com.example.bluetoothscanner.utils.PermissionUtils
 // 讓 callbackFlow 結束時可以清理資源
 import kotlinx.coroutines.channels.awaitClose
 // 將 BroadcastReceiver callback 轉成 Flow
@@ -56,7 +59,7 @@ import javax.inject.Inject
  *         ↓
  * cancelDiscovery()
  * unregisterReceiver()
- * 清理完畢 ✅
+ * 清理完畢
  */
 class ClassicBluetoothScannerImpl @Inject constructor(
 
@@ -100,10 +103,27 @@ class ClassicBluetoothScannerImpl @Inject constructor(
      */
     override fun startScan(): Flow<ScanDevice> = callbackFlow {
 
-        // 情況一：裝置不支援藍牙
+        // 1.裝置不支援藍牙
         if (bluetoothAdapter == null) {
-            // 直接關閉 Flow，沒資料可以掃
-            close()
+            close(Exception("此裝置不支援藍牙"))
+            return@callbackFlow
+        }
+
+        // 2.如果目前已經在掃描，先取消舊掃描
+        if (bluetoothAdapter.isDiscovering) {
+            bluetoothAdapter.cancelDiscovery()
+        }
+
+        // 3.檢查藍牙開關是否打開
+        if (!bluetoothAdapter.isEnabled) {
+            close(Exception("藍牙目前已關閉，請先開啟藍牙"))
+            return@callbackFlow
+        }
+
+        // 4.位置服務（GPS 開關）未開啟
+        // Classic BT startDiscovery() 在大多數裝置（包含 MIUI）上需要系統層級的定位服務開啟
+        if (!PermissionUtils.isLocationEnabled(context)) {
+            close(Exception("請先至手機「設定 → 定位」開啟位置服務後再掃描"))
             return@callbackFlow
         }
 
@@ -140,7 +160,6 @@ class ClassicBluetoothScannerImpl @Inject constructor(
 
                     // 掃描到 Classic Bluetooth 裝置時會收到 ACTION_FOUND
                     BluetoothDevice.ACTION_FOUND -> {
-
                         // 從 Intent 中取得 BluetoothDevice
                         val device = getBluetoothDevice(intent)
 
@@ -184,6 +203,7 @@ class ClassicBluetoothScannerImpl @Inject constructor(
                      * └── 3. 藍牙被關掉 → 強制結束
                      */
                     BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
+                        Log.d("tutu", "ACTION_DISCOVERY_FINISHED")
                         // 關閉 Flow，表示本次掃描結束
                         close()
                     }
@@ -193,6 +213,8 @@ class ClassicBluetoothScannerImpl @Inject constructor(
 
         // 建立 IntentFilter，指定要接收的藍牙廣播事件（過濾器）
         val filter = IntentFilter().apply {
+            // 提高 IntentFilter 優先級，防止被攔截
+//            priority = IntentFilter.SYSTEM_HIGH_PRIORITY
 
             // 接收掃描到裝置的事件
             addAction(BluetoothDevice.ACTION_FOUND)
@@ -212,21 +234,19 @@ class ClassicBluetoothScannerImpl @Inject constructor(
             // 傳入要監聽的事件 filter
             filter,
 
-            // 設定 receiver 不對外部 App 開放
-            ContextCompat.RECEIVER_NOT_EXPORTED
+            // 設定 receiver 對外部 App 開放
+            ContextCompat.RECEIVER_EXPORTED
         )
-
-        // 如果目前已經在掃描，先取消舊掃描
-        if (bluetoothAdapter.isDiscovering) {
-            bluetoothAdapter.cancelDiscovery()
-        }
 
         // 開始 Classic Bluetooth 掃描
         val started = bluetoothAdapter.startDiscovery()
+        if (started) {
+            Log.d("tutu", "指令發送成功，等待 STARTED 廣播...")
+        }
 
-        // 情況三：掃描啟動失敗，直接關閉 Flow
+        // 5.掃描啟動失敗，關閉 Flow 並帶入原因（可能是定位服務未開啟或權限不足）
         if (!started) {
-            close()
+            close(Exception("startDiscovery() returned false，請確認已開啟定位服務與相關權限"))
         }
 
         /**
@@ -239,7 +259,6 @@ class ClassicBluetoothScannerImpl @Inject constructor(
          * └── 發生 Exception
          */
         awaitClose {
-
             // 如果仍在掃描中，取消掃描
             if (bluetoothAdapter.isDiscovering) {
                 // 停止掃描
@@ -263,9 +282,7 @@ class ClassicBluetoothScannerImpl @Inject constructor(
     }
 
     // 停止 Classic Bluetooth 掃描
-    @SuppressLint("MissingPermission")
     override fun stopScan() {
-
         // 如果藍牙正在掃描中，就取消掃描
         if (bluetoothAdapter?.isDiscovering == true) {
             bluetoothAdapter.cancelDiscovery()

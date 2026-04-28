@@ -1,6 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 宣告 App 需要使用藍牙功能 -->
+    <uses-feature
+        android:name="android.hardware.bluetooth"
+        android:required="false" />
+
+    <!-- 宣告 App 需要使用 BLE 功能 -->
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
+        android:required="false" />
+
+    <!-- Android 12 以下使用的藍牙權限-->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
+
+    <!-- Android 12 以下使用的藍牙管理權限 -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_ADMIN"
+        android:maxSdkVersion="30" />
+
+    <!-- Android 12 以上掃描附近藍牙裝置需要的權限 -->
+    <!-- neverForLocation 會導致 Classic BT startDiscovery() 在部分裝置（如 MIUI）回傳 false，故移除 -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+
+    <!-- Android 12 以上連線藍牙裝置或讀取裝置資訊常需要的權限 -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+    <!-- Classic BT startDiscovery() 在部分 Android 12+ OEM（如 MIUI）仍需要定位權限 -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
         android:name=".BluetoothScannerApp"
