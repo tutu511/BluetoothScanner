@@ -1,13 +1,15 @@
 package com.example.bluetoothscanner.data.repository
 
 import com.example.bluetoothscanner.data.model.ScanDevice
+import com.example.bluetoothscanner.data.scanner.BleBluetoothScanner
 import com.example.bluetoothscanner.data.scanner.ClassicBluetoothScanner
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class BluetoothScanRepositoryImpl @Inject constructor(
     // 注入 ClassicBluetoothScanner，讓 Repository 可以呼叫 Classic 掃描功能
-    private val classicBluetoothScanner: ClassicBluetoothScanner
+    private val classicBluetoothScanner: ClassicBluetoothScanner,
+    private val bleBluetoothScanner: BleBluetoothScanner
 
 ) : BluetoothScanRepository {
 
@@ -24,4 +26,15 @@ class BluetoothScanRepositoryImpl @Inject constructor(
         // 轉呼叫底層 ClassicBluetoothScanner，停止掃描
         classicBluetoothScanner.stopScan()
     }
+
+    // 開始 BLE 掃描
+    override fun startBleScan(): Flow<ScanDevice> {
+        return bleBluetoothScanner.startScan()
+    }
+
+    // 停止 BLE 掃描
+    override fun stopBleScan() {
+        bleBluetoothScanner.stopScan()
+    }
+
 }

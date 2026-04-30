@@ -1,5 +1,8 @@
 package com.example.bluetoothscanner.ui.ble
 
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,14 +23,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.bluetoothscanner.data.model.ScanDevice
 import com.example.bluetoothscanner.ui.components.DeviceItem
 import com.example.bluetoothscanner.ui.navigation.Routes
+import com.example.bluetoothscanner.utils.PermissionUtils
 
 /**
  * 宣告 BleScanScreen BLE 掃描頁面
@@ -43,6 +49,30 @@ import com.example.bluetoothscanner.ui.navigation.Routes
 fun BleScanScreen(navController: NavController, viewModel: BleScanViewModel = hiltViewModel()) {
 
     val uiState by viewModel.uiState.collectAsState()
+
+    val context = LocalContext.current
+
+    // 取得 BLE 掃描需要的權限清單
+    val permissions = PermissionUtils.bleBluetoothPermissions()
+
+    // 建立多權限請求 launcher，權限請求需要跟 Android 系統互動，彈出對話框給使用者看，這是 UI 層的職責
+    val permissionLauncher = rememberLauncherForActivityResult(
+        // 使用 RequestMultiplePermissions 一次請求多個權限
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+        // 權限請求完成後會回傳每個權限的授權結果
+        onResult = { result ->
+
+            // 檢查是否所有必要權限都已授權
+            val allGranted = result.values.all { granted ->
+                granted
+            }
+
+            // 如果全部授權，開始掃描
+            if (allGranted) {
+                viewModel.startScan()
+            }
+        }
+    )
 
     Surface(
         modifier = Modifier.fillMaxSize()
@@ -85,7 +115,21 @@ fun BleScanScreen(navController: NavController, viewModel: BleScanViewModel = hi
                 // 開始掃描按鈕
                 Button(
                     onClick = {
-                        viewModel.startScan()
+                        // 判斷所有必要權限是否都已授權
+                        val allGranted = permissions.all { permission ->
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                permission
+                            ) == PackageManager.PERMISSION_GRANTED
+                        }
+
+                        // 如果已經全部授權，直接開始掃描
+                        if (allGranted) {
+                            viewModel.startScan()
+                        } else {
+                            // 如果尚未授權，向使用者請求權限。
+                            permissionLauncher.launch(permissions)
+                        }
                     },
                     modifier = Modifier.weight(1f)
                 ) {

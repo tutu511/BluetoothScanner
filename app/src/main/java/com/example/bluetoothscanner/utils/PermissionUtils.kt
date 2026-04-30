@@ -17,12 +17,14 @@ object PermissionUtils {
             arrayOf(
                 Manifest.permission.BLUETOOTH_SCAN,
                 Manifest.permission.BLUETOOTH_CONNECT,
-                Manifest.permission.ACCESS_FINE_LOCATION
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
             )
         } else {
             // Android 11 以下 Classic / BLE 掃描常需要定位權限
             arrayOf(
-                Manifest.permission.ACCESS_FINE_LOCATION
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
             )
         }
     }
@@ -51,7 +53,8 @@ object PermissionUtils {
         } else {
             // Android 11 以下 BLE 掃描通常需要定位權限
             arrayOf(
-                Manifest.permission.ACCESS_FINE_LOCATION
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
             )
         }
     }

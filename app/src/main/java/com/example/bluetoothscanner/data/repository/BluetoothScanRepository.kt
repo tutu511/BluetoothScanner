@@ -11,4 +11,10 @@ interface BluetoothScanRepository {
 
     // 停止 Classic Bluetooth 掃描
     fun stopClassicScan()
+
+    // 開始 BLE 掃描
+    fun startBleScan(): Flow<ScanDevice>
+
+    // 停止 BLE 掃描
+    fun stopBleScan()
 }

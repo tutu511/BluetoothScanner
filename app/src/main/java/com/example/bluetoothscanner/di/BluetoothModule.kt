@@ -1,5 +1,7 @@
 package com.example.bluetoothscanner.di
 
+import com.example.bluetoothscanner.data.scanner.BleBluetoothScanner
+import com.example.bluetoothscanner.data.scanner.BleBluetoothScannerImpl
 import com.example.bluetoothscanner.data.scanner.ClassicBluetoothScanner
 import com.example.bluetoothscanner.data.scanner.ClassicBluetoothScannerImpl
 // 用來告訴 Hilt 介面要綁定哪個實作
@@ -48,4 +50,11 @@ abstract class BluetoothModule {
         // 傳入 ClassicBluetoothScannerImpl 實作類別
         impl: ClassicBluetoothScannerImpl
     ): ClassicBluetoothScanner
+
+
+    @Binds
+    @Singleton
+    abstract fun bindBleBluetoothScanner(
+        impl: BleBluetoothScannerImpl
+    ): BleBluetoothScanner
 }

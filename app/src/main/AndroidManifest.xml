@@ -23,13 +23,15 @@
 
     <!-- Android 12 以上掃描附近藍牙裝置需要的權限 -->
     <!-- neverForLocation 會導致 Classic BT startDiscovery() 在部分裝置（如 MIUI）回傳 false，故移除 -->
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation"/>
 
     <!-- Android 12 以上連線藍牙裝置或讀取裝置資訊常需要的權限 -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
     <!-- Classic BT startDiscovery() 在部分 Android 12+ OEM（如 MIUI）仍需要定位權限 -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:name=".BluetoothScannerApp"

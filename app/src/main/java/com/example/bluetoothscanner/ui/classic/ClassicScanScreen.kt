@@ -58,7 +58,7 @@ fun ClassicScanScreen(
     // 取得 Classic 掃描需要的權限清單
     val permissions = PermissionUtils.classicBluetoothPermissions()
 
-    // 建立多權限請求 launcher
+    // 建立多權限請求 launcher，權限請求需要跟 Android 系統互動，彈出對話框給使用者看，這是 UI 層的職責
     val permissionLauncher = rememberLauncherForActivityResult(
         // 使用 RequestMultiplePermissions 一次請求多個權限
         contract = ActivityResultContracts.RequestMultiplePermissions(),

@@ -1,8 +1,7 @@
 package com.example.bluetoothscanner.data.scanner
 
-// 用來壓制 MissingPermission 警告，權限會在 UI 層或工具類處理
-import android.annotation.SuppressLint
 // 用來執行 Classic Bluetooth 掃描
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 // 用來取得掃描到的藍牙裝置資訊
 import android.bluetooth.BluetoothDevice
@@ -16,7 +15,6 @@ import android.content.Context
 import android.content.Intent
 // 用來指定 BroadcastReceiver 要接收哪些事件
 import android.content.IntentFilter
-import android.location.LocationManager
 // 用來判斷 Android 版本
 import android.os.Build
 import android.util.Log
@@ -61,6 +59,7 @@ import javax.inject.Inject
  * unregisterReceiver()
  * 清理完畢
  */
+@SuppressLint("MissingPermission")
 class ClassicBluetoothScannerImpl @Inject constructor(
 
     /**
@@ -82,12 +81,11 @@ class ClassicBluetoothScannerImpl @Inject constructor(
     private val bluetoothManager: BluetoothManager? =
         context.getSystemService(BluetoothManager::class.java)
 
-    // 從 BluetoothManager 取得 BluetoothAdapter
+    // 從 BluetoothManager 取得 BluetoothAdapter 藍牙硬體控制器
     private val bluetoothAdapter: BluetoothAdapter? =
         bluetoothManager?.adapter
 
     // 開始 Classic Bluetooth 掃描
-    @SuppressLint("MissingPermission")
     /**
      * 傳統設備：藍牙掃描是用 BroadcastReceiver 回呼（callback） 的方式回傳資料
      * 傳統 callback 方式：
@@ -116,14 +114,14 @@ class ClassicBluetoothScannerImpl @Inject constructor(
 
         // 3.檢查藍牙開關是否打開
         if (!bluetoothAdapter.isEnabled) {
-            close(Exception("藍牙目前已關閉，請先開啟藍牙"))
+            close(IllegalStateException("藍牙目前已關閉，請先開啟藍牙"))
             return@callbackFlow
         }
 
         // 4.位置服務（GPS 開關）未開啟
         // Classic BT startDiscovery() 在大多數裝置（包含 MIUI）上需要系統層級的定位服務開啟
         if (!PermissionUtils.isLocationEnabled(context)) {
-            close(Exception("請先至手機「設定 → 定位」開啟位置服務後再掃描"))
+            close(IllegalStateException("請先至手機「設定 → 定位」開啟位置服務後再掃描"))
             return@callbackFlow
         }
 

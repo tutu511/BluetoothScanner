@@ -117,7 +117,19 @@ class ClassicScanViewModel @Inject constructor(
 
     // 停止掃描
     fun stopScan() {
-        // 結束掃描 - cancelDiscovery - ACTION_DISCOVERY_FINISHED - close - onCompletion
+        /**
+         * 結束掃描 - cancelDiscovery - ACTION_DISCOVERY_FINISHED - close - awaitClose - onCompletion
+         * awaitClose 是 Flow 內部的清理
+         * onCompletion 是 Flow 外部的觀察
+         *
+         * callbackFlow 內部：
+         *     awaitClose { 清理資源 }  ← Flow 自己先打掃乾淨
+         *
+         *         ↓ 打掃完，Flow 正式結束
+         *
+         * Flow 外部：
+         *     .onCompletion { 更新 UI } ← 外面的人才收到通知
+         */
         repository.stopClassicScan()
     }
 
